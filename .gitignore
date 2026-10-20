@@ -1,0 +1,28 @@
+
+# Virtual environment
+.venv/
+
+# IDE
+.idea/
+
+# Environment variables and credentials
+.env
+.env.*
+!.env.example
+
+# Python cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Generated data
+data/*.csv
+data/**/*.csv
+
+# CatBoost training logs
+catboost_info/
+
+# Temporary files
+*.log
+.DS_Store
+Thumbs.db
