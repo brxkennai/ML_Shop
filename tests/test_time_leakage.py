@@ -117,7 +117,7 @@ def test_history_boundaries(test_db):
     user = data[1]
 
     assert user["sessions_last_60d"] == 2
-    assert float(user["avg_session_duration_60d"]) == pytest.approx(90)
+    assert float(user["avg_session_duration_60d"]) == pytest.approx(60)
 
     assert user["events_last_60d"] == 2
     assert user["page_views_60d"] == 0
@@ -127,6 +127,35 @@ def test_history_boundaries(test_db):
 
     assert data[2]["sessions_last_60d"] == 0
     assert data[2]["avg_session_duration_60d"] is None
+
+
+@pytest.mark.parametrize(
+    ("duration", "expected_average"),
+    [(119, 89.5), (120, 90), (121, 60), (600, 60)]
+)
+def test_session_duration_is_known_at_snapshot(
+    test_db, duration, expected_average
+):
+    with test_db.cursor() as cur:
+        cur.execute("""
+            INSERT INTO sessions
+                (session_id, user_id, started_at, duration_seconds)
+            VALUES
+                (10, 1, '2026-06-30 23:00:00', 60),
+                (11, 1, '2026-06-30 23:58:00', %s),
+                (12, 2, '2026-06-30 23:58:00', %s)
+        """, (duration, duration))
+
+    data = get_predictions_data(test_db)
+    assert data[1]["sessions_last_60d"] == 2
+    assert float(data[1]["avg_session_duration_60d"]) == pytest.approx(
+        expected_average
+    )
+    assert data[2]["sessions_last_60d"] == 1
+    if duration <= 120:
+        assert float(data[2]["avg_session_duration_60d"]) == duration
+    else:
+        assert data[2]["avg_session_duration_60d"] is None
 
 
 # 2. Границы целевого окна

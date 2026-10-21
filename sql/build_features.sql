@@ -15,7 +15,11 @@ session_stats AS (
         u.user_id,
         COUNT(s.session_id) AS sessions_last_60d,
         ROUND(
-            AVG(s.duration_seconds)::numeric, 2
+            (AVG(s.duration_seconds) FILTER (
+                WHERE s.started_at
+                    + s.duration_seconds * INTERVAL '1 second'
+                    <= p.snapshot_date
+            ))::numeric, 2
         ) AS avg_session_duration_60d
     FROM users AS u
     CROSS JOIN params AS p

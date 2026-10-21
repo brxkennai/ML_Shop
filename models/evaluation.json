@@ -1,0 +1,45 @@
+{
+  "description": "Historical synthetic-data holdout after session-duration availability fix",
+  "train_snapshot_range": [
+    "2026-01-01",
+    "2026-07-01"
+  ],
+  "holdout_snapshot": "2026-08-01",
+  "holdout_users": 2500,
+  "holdout_positives": 89,
+  "tuning": {
+    "n_trials": 10,
+    "seed": 42,
+    "validation_snapshots": [
+      "2026-04-01",
+      "2026-05-01",
+      "2026-06-01",
+      "2026-07-01"
+    ],
+    "best_cv_ap": 0.09671963983524558,
+    "best_params": {
+      "depth": 3,
+      "learning_rate": 0.015254729458052608
+    }
+  },
+  "catboost": {
+    "roc_auc": 0.6452122528299601,
+    "ap": 0.07665049314117058,
+    "precision_at_k": 0.1,
+    "lift_at_k": 2.808988764044944
+  },
+  "baselines": {
+    "dummy": {
+      "roc_auc": 0.5,
+      "ap": 0.0356,
+      "precision_at_k": null,
+      "lift_at_k": null
+    },
+    "logistic_regression": {
+      "roc_auc": 0.6273447075436085,
+      "ap": 0.08507306895272435,
+      "precision_at_k": 0.11,
+      "lift_at_k": 3.0898876404494384
+    }
+  }
+}

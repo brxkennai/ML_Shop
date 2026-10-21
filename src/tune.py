@@ -1,14 +1,13 @@
-
-
 import argparse
+import json
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 import numpy as np
 import optuna
 import pandas as pd
 from catboost import CatBoostClassifier
 from sklearn.metrics import average_precision_score
-import json
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -24,10 +23,6 @@ VAL_DATES = [
 CAT_FEATURES = ["country"]
 
 PARAMS_PATH = PROJECT_ROOT / "config" / "best_params.json"
-
-BEST_PARAMS = json.loads(
-    PARAMS_PATH.read_text(encoding="utf-8")
-)
 
 
 def load_dataset():
@@ -86,6 +81,9 @@ def objective(trial, df):
 
 
 def run_tuning(n_trials=10):
+    if n_trials < 1:
+        raise ValueError("n_trials должно быть положительным")
+
     df = load_dataset()
 
     sampler = optuna.samplers.TPESampler(seed=42)
@@ -100,8 +98,25 @@ def run_tuning(n_trials=10):
         n_trials=n_trials
     )
 
+    # Replace the configuration only after a successful completed study.
+    PARAMS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = None
+    try:
+        with NamedTemporaryFile(
+            mode="w", encoding="utf-8", dir=PARAMS_PATH.parent,
+            suffix=".tmp", delete=False
+        ) as temporary:
+            temporary_path = Path(temporary.name)
+            json.dump(study.best_params, temporary, indent=2)
+            temporary.write("\n")
+        temporary_path.replace(PARAMS_PATH)
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+
     print("\nЛучший средний AP:", study.best_value)
     print("Лучшие параметры:", study.best_params)
+    print("Параметры сохранены:", PARAMS_PATH)
 
     return study
 
@@ -126,6 +141,7 @@ if __name__ == "__main__":
     if args.run:
         run_tuning(n_trials=args.trials)
     else:
-        print("Сохранённые лучшие параметры:", BEST_PARAMS)
+        best_params = json.loads(PARAMS_PATH.read_text(encoding="utf-8"))
+        print("Сохранённые лучшие параметры:", best_params)
         print("Подбор Optuna не запущен.")
         print("Для повторного подбора используйте --run")
